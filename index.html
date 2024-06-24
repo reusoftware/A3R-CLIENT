@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A3R</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        #mainContent {
+            display: none;
+        }
+        .tab {
+            display: none;
+        }
+        .tab.active {
+            display: block;
+        }
+        /* Your additional styles */
+    </style>
+</head>
+<body>
+    <div id="loginForm">
+        <label for="username">Username:</label>
+        <input type="text" id="username">
+        <label for="password">Password:</label>
+        <input type="password" id="password">
+        <button id="loginButton">Login</button>
+        <div id="status"></div>
+    </div>
+
+    <div id="mainContent">
+        <div class="tabs">
+            <i class="fas fa-user tabButton" data-tab="friendsTab" title="Friends"></i>
+            <i class="fas fa-users tabButton" data-tab="chatroomsTab" title="Chatrooms"></i>
+            <i class="fas fa-comments tabButton" data-tab="historyTab" title="Private Chat History"></i>
+        </div>
+        <div id="friendsTab" class="tab">
+            <ul id="friendListbox"></ul>
+        </div>
+        <div id="chatroomsTab" class="tab">
+            <ul id="roomListbox"></ul>
+        </div>
+        <div id="historyTab" class="tab">
+            <!-- Content for Private Chat History -->
+        </div>
+    </div>
+
+    <textarea id="debugBox" rows="10" cols="50" readonly></textarea>
+    <script src="client.js"></script>
+</body>
+</html>

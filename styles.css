@@ -1,0 +1,150 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    padding: 20px;
+}
+
+#loginForm {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+#loginForm label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+#loginForm input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+#loginButton {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#loginButton:hover {
+    background-color: #0056b3;
+}
+
+#status {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+#mainContent {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tabs {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.tabButton {
+    font-size: 24px;
+    cursor: pointer;
+    color: #007bff;
+    transition: color 0.3s;
+}
+
+.tabButton:hover {
+    color: #0056b3;
+}
+
+.tab.active {
+    display: block;
+}
+
+.friend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s;
+}
+
+.friend-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.username {
+    font-weight: bold;
+    flex-grow: 1;
+}
+
+.status-message {
+    display: none;
+    margin-left: 10px;
+    color: grey;
+}
+
+.friend-item:hover .status-message {
+    display: block;
+}
+
+.room-logo {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: #fff;
+    margin-right: 10px;
+    font-weight: bold;
+}
+
+.room-list-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s;
+}
+
+.room-list-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
