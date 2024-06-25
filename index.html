@@ -4,31 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A3R</title>
-    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f4f4;
             padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
         }
+        
         #loginForm {
-            max-width: 300px;
+            max-width: 400px;
+            margin: 0 auto;
             padding: 20px;
             background-color: #fff;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+        
         #loginForm label {
             display: block;
             margin-bottom: 10px;
             font-weight: bold;
         }
+        
         #loginForm input {
             width: 100%;
             padding: 10px;
@@ -36,6 +34,7 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
+        
         #loginButton {
             width: 100%;
             padding: 10px;
@@ -46,48 +45,46 @@
             cursor: pointer;
             font-size: 16px;
         }
+        
         #loginButton:hover {
             background-color: #0056b3;
         }
+        
         #status {
             margin-top: 10px;
             font-weight: bold;
         }
+        
         #mainContent {
-            display: none;
-            max-width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
             padding: 20px;
             background-color: #fff;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+        
         .tabs {
             display: flex;
             justify-content: space-around;
             margin-bottom: 20px;
         }
+        
         .tabButton {
             font-size: 24px;
             cursor: pointer;
             color: #007bff;
             transition: color 0.3s;
         }
+        
         .tabButton:hover {
             color: #0056b3;
         }
-        .tab {
-            display: none;
-            max-height: calc(100vh - 240px); /* Adjust based on your layout and other elements */
-            overflow-y: auto; /* Enable scrolling within the tab */
-        }
+        
         .tab.active {
             display: block;
         }
-        .friend-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 0;
-        }
+        
         .friend-item {
             display: flex;
             align-items: center;
@@ -98,46 +95,40 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             transition: background-color 0.3s;
         }
+        
         .friend-item:hover {
             background-color: rgba(0, 0, 0, 0.05);
         }
+        
         .avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
             margin-right: 10px;
         }
+        
         .status-indicator {
             width: 10px;
             height: 10px;
             border-radius: 50%;
             margin-right: 10px;
         }
+        
         .username {
             font-weight: bold;
             flex-grow: 1;
         }
+        
         .status-message {
             display: none;
             margin-left: 10px;
             color: grey;
         }
+        
         .friend-item:hover .status-message {
             display: block;
         }
-        .room-list-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            transition: background-color 0.3s;
-        }
-        .room-list-item:hover {
-            background-color: rgba(0, 0, 0, 0.05);
-        }
+        
         .room-logo {
             display: inline-block;
             width: 20px;
@@ -150,10 +141,20 @@
             margin-right: 10px;
             font-weight: bold;
         }
-        @media (max-width: 600px) {
-            #loginForm {
-                max-width: 250px;
-            }
+        
+        .room-list-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s;
+        }
+        
+        .room-list-item:hover {
+            background-color: rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
@@ -167,17 +168,17 @@
         <div id="status"></div>
     </div>
 
-    <div id="mainContent">
+    <div id="mainContent" style="display:none;">
         <div class="tabs">
             <i class="fas fa-user tabButton" data-tab="friendsTab" title="Friends"></i>
             <i class="fas fa-users tabButton" data-tab="chatroomsTab" title="Chatrooms"></i>
             <i class="fas fa-comments tabButton" data-tab="historyTab" title="Private Chat History"></i>
         </div>
         <div id="friendsTab" class="tab">
-            <ul id="friendListbox" class="friend-list"></ul>
+            <ul id="friendListbox"></ul>
         </div>
         <div id="chatroomsTab" class="tab">
-            <ul id="roomListbox" class="scrollable-list"></ul>
+            <ul id="roomListbox"></ul>
         </div>
         <div id="historyTab" class="tab">
             <!-- Content for Private Chat History -->
