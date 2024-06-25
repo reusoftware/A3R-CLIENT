@@ -1,6 +1,3 @@
-
-//copy========
-
 document.addEventListener('DOMContentLoaded', () => {
     let socket;
     let isConnected = false;
@@ -93,27 +90,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return `R.U.BULAN©pinoy-2023®#${Math.random().toString(36).substring(7)}`;
     }
 
-  function processReceivedMessage(message) {
-    const jsonDict = JSON.parse(message);
-    debugBox.value += `${message}\n`;
+    function processReceivedMessage(message) {
+        const jsonDict = JSON.parse(message);
+        debugBox.value += `${message}\n`;
 
-    if (jsonDict.handler === 'login_event') {
-        if (jsonDict.type === 'success') {
-            loginForm.style.display = 'none';
-            mainContent.style.display = 'block';
-            statusDiv.textContent = 'Online';
-            fetchFriendList(jsonDict.users);
-            fetchChatrooms();
-        } else {
-            statusDiv.textContent = `Login failed: ${jsonDict.reason}`;
+        if (jsonDict.handler === 'login_event') {
+            if (jsonDict.type === 'success') {
+                loginForm.style.display = 'none';
+                mainContent.style.display = 'block';
+                statusDiv.textContent = 'Online';
+                fetchFriendList(jsonDict.users);
+                fetchChatrooms();
+            } else {
+                statusDiv.textContent = `Login failed: ${jsonDict.reason}`;
+            }
+        } else if (jsonDict.handler === 'roster') {
+            updateFriendList(jsonDict.users);
+        } else if (jsonDict.handler === 'room_info') {
+            populateRoomList(jsonDict.rooms);
         }
-    } else if (jsonDict.handler === 'roster') {
-        updateFriendList(jsonDict.users);
-    } else if (jsonDict.handler === 'room_info') {
-        populateRoomList(jsonDict.rooms);
     }
-}
-
 
     function updateFriendList(users) {
         if (!users || !Array.isArray(users) || users.length === 0) {
@@ -263,6 +259,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         rooms.forEach(room => {
             const listItem = document.createElement('li');
+            listItem.classList.add('room-list-item');
+
             const logo = document.createElement('span');
             logo.textContent = room.name.charAt(0);
             logo.classList.add('room-logo');
