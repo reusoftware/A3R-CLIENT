@@ -1,3 +1,6 @@
+
+//copy========
+
 document.addEventListener('DOMContentLoaded', () => {
     let socket;
     let isConnected = false;
@@ -13,10 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabButtons = document.querySelectorAll('.tabButton');
     const tabs = document.querySelectorAll('.tab');
     const friendListbox = document.getElementById('friendListbox');
-    const chatHistoryList = document.getElementById('chatHistoryList');
-    const chatDetail = document.getElementById('chatDetail');
-    const chatContent = document.getElementById('chatContent');
-    const backToHistoryButton = document.getElementById('backToHistory');
+    const friendListTab = document.getElementById('friendsTab');
 
     loginButton.addEventListener('click', async () => {
         const username = document.getElementById('username').value;
@@ -34,15 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     tab.classList.remove('active');
                 }
             });
-            if (tabId === 'historyTab') {
-                fetchChatHistory();
-            }
         });
-    });
-
-    backToHistoryButton.addEventListener('click', () => {
-        chatDetail.style.display = 'none';
-        chatHistoryList.style.display = 'block';
     });
 
     async function connectWebSocket(username, password) {
@@ -101,28 +93,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return `R.U.BULAN©pinoy-2023®#${Math.random().toString(36).substring(7)}`;
     }
 
-    function processReceivedMessage(message) {
-        const jsonDict = JSON.parse(message);
-        debugBox.value += `${message}\n`;
+  function processReceivedMessage(message) {
+    const jsonDict = JSON.parse(message);
+    debugBox.value += `${message}\n`;
 
-        if (jsonDict.handler === 'login_event') {
-            if (jsonDict.type === 'success') {
-                loginForm.style.display = 'none';
-                mainContent.style.display = 'block';
-                statusDiv.textContent = 'Online';
-                fetchFriendList(jsonDict.users);
-                fetchChatrooms();
-            } else {
-                statusDiv.textContent = `Login failed: ${jsonDict.reason}`;
-            }
-        } else if (jsonDict.handler === 'roster') {
-            updateFriendList(jsonDict.users);
-        } else if (jsonDict.handler === 'room_info') {
-            populateRoomList(jsonDict.rooms);
-        } else if (jsonDict.handler === 'chat_message') {
-            updateChatHistory(jsonDict.message);
+    if (jsonDict.handler === 'login_event') {
+        if (jsonDict.type === 'success') {
+            loginForm.style.display = 'none';
+            mainContent.style.display = 'block';
+            statusDiv.textContent = 'Online';
+            fetchFriendList(jsonDict.users);
+            fetchChatrooms();
+        } else {
+            statusDiv.textContent = `Login failed: ${jsonDict.reason}`;
         }
+    } else if (jsonDict.handler === 'roster') {
+        updateFriendList(jsonDict.users);
+    } else if (jsonDict.handler === 'room_info') {
+        populateRoomList(jsonDict.rooms);
     }
+}
+
 
     function updateFriendList(users) {
         if (!users || !Array.isArray(users) || users.length === 0) {
@@ -197,12 +188,69 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchChatrooms() {
-        const roomList = [
-            { name: 'Room 1', description: 'Description 1', photo_url: 'room1.png' },
-            { name: 'Room 2', description: 'Description 2', photo_url: 'room2.png' },
-            { name: 'Room 3', description: 'Description 3', photo_url: 'room3.png' }
-        ];
-        populateRoomList(roomList); // Replace with actual API call or WebSocket message
+        const mucType = 'public_rooms';
+        try {
+            const allRooms = await fetchAllChatrooms(mucType);
+            populateRoomList(allRooms);
+        } catch (error) {
+            console.error('Error fetching chatrooms:', error);
+        }
+    }
+
+    async function fetchAllChatrooms(mucType) {
+        let allRooms = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        while (currentPage <= totalPages) {
+            try {
+                const response = await getChatroomList(mucType, currentPage);
+                if (response && response.rooms) {
+                    allRooms = allRooms.concat(response.rooms);
+                    totalPages = parseInt(response.page, 10) || 1;
+                    currentPage++;
+                } else {
+                    break;
+                }
+            } catch (error) {
+                console.error('Error fetching chatrooms:', error);
+                break;
+            }
+        }
+
+        return allRooms;
+    }
+
+    async function getChatroomList(mucType, pageNum) {
+        const packetID = generatePacketID();
+        const listRequest = {
+            handler: 'room_info',
+            type: mucType,
+            id: packetID,
+            page: pageNum.toString()
+        };
+
+        return new Promise((resolve, reject) => {
+            socket.send(JSON.stringify(listRequest));
+
+            const handleResponse = (event) => {
+                try {
+                    const response = JSON.parse(event.data);
+                    if (response.handler === 'room_info' && response.type === mucType) {
+                        socket.removeEventListener('message', handleResponse);
+                        resolve(response);
+                    }
+                } catch (error) {
+                    reject(error);
+                }
+            };
+
+            socket.addEventListener('message', handleResponse);
+
+            socket.onerror = (error) => {
+                reject(error);
+            };
+        });
     }
 
     function populateRoomList(rooms) {
@@ -211,94 +259,24 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        roomListbox.innerHTML = ''; // Clear previous content
+        roomListbox.innerHTML = '';
 
         rooms.forEach(room => {
-            const li = document.createElement('li');
-            li.classList.add('room-item');
+            const listItem = document.createElement('li');
+            const logo = document.createElement('span');
+            logo.textContent = room.name.charAt(0);
+            logo.classList.add('room-logo');
 
-            const roomImage = document.createElement('img');
-            roomImage.src = room.photo_url || 'default-room.png';
-            roomImage.alt = room.name;
-            roomImage.classList.add('room-image');
+            listItem.appendChild(logo);
+            listItem.appendChild(document.createTextNode(` ${room.name} (${room.users_count} users)`));
 
-            const roomName = document.createElement('span');
-            roomName.textContent = room.name;
-            roomName.classList.add('room-name');
+            if (room.password_protected === '1') {
+                listItem.textContent += ' [Password Protected]';
+            } else if (room.members_only === '1') {
+                listItem.textContent += ' [Members Only]';
+            }
 
-            const roomDescription = document.createElement('div');
-            roomDescription.textContent = room.description;
-            roomDescription.classList.add('room-description');
-
-            li.appendChild(roomImage);
-            li.appendChild(roomName);
-            li.appendChild(roomDescription);
-
-            roomListbox.appendChild(li);
-        });
-    }
-
-    async function fetchChatHistory() {
-        const chatHistory = [
-            { user: 'User 1', message: 'Message 1' },
-            { user: 'User 2', message: 'Message 2' },
-            { user: 'User 3', message: 'Message 3' }
-        ];
-        updateChatHistory(chatHistory); // Replace with actual API call or WebSocket message
-    }
-
-    function updateChatHistory(messages) {
-        if (!messages || !Array.isArray(messages) || messages.length === 0) {
-            console.log('No chat history to display.');
-            return;
-        }
-
-        chatHistoryList.innerHTML = ''; // Clear previous content
-
-        messages.forEach(msg => {
-            const div = document.createElement('div');
-            div.classList.add('chat-history-item');
-
-            const username = document.createElement('span');
-            username.textContent = msg.user;
-            username.classList.add('chat-user');
-
-            const message = document.createElement('span');
-            message.textContent = msg.message;
-            message.classList.add('chat-message');
-
-            div.appendChild(username);
-            div.appendChild(message);
-
-            div.addEventListener('click', () => {
-                displayChatDetail(msg.user, [msg]);
-            });
-
-            chatHistoryList.appendChild(div);
-        });
-    }
-
-    function displayChatDetail(user, messages) {
-        chatHistoryList.style.display = 'none';
-        chatDetail.style.display = 'block';
-        chatContent.innerHTML = ''; // Clear previous content
-
-        messages.forEach(msg => {
-            const div = document.createElement('div');
-            div.classList.add('chat-message-detail');
-
-            const username = document.createElement('span');
-            username.textContent = msg.user;
-            username.classList.add('chat-user-detail');
-
-            const message = document.createElement('span');
-            message.textContent = msg.message;
-            message.classList.add('chat-message-detail-text');
-
-            div.appendChild(username);
-            div.appendChild(message);
-
-            chatContent.appendChild(div);
+            roomListbox.appendChild(listItem);
         });
     }
 });
