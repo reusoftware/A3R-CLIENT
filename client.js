@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let isConnected = false;
     let reconnectInterval = 5000;
     let reconnectTimeout;
+    let currentUsername = '';
 
     const loginButton = document.getElementById('loginButton');
     const statusDiv = document.getElementById('status');
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loginButton.addEventListener('click', async () => {
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
+        currentUsername = username;
         await connectWebSocket(username, password);
     });
 
@@ -133,60 +135,67 @@ document.addEventListener('DOMContentLoaded', () => {
                 name: roomName
             };
             await sendMessageToSocket(joinMessage);
+            await fetchUserList(roomName);
+
+            const roomInput = document.getElementById('room');
+            roomInput.value = roomName;
+
+            const tabId = `tab-${roomName}`;
+            if (!document.getElementById(tabId)) {
+                const tabButton = document.createElement('button');
+                tabButton.className = 'tabButton';
+                tabButton.dataset.tab = tabId;
+                tabButton.textContent = roomName;
+                document.querySelector('.tab-buttons').appendChild(tabButton);
+
+                const tab = document.createElement('div');
+                tab.className = 'tab';
+                tab.id = tabId;
+                tab.innerHTML = `
+                    <h3>Chat Room: ${roomName}</h3>
+                    <div class="chatbox"></div>
+                    <input type="text" class="messageInput" placeholder="Type a message...">
+                    <button class="sendMessageButton">Send</button>
+                `;
+                mainContent.appendChild(tab);
+
+                tabButton.addEventListener('click', () => {
+                    tabs.forEach(tab => tab.classList.remove('active'));
+                    tab.classList.add('active');
+                });
+
+                const sendMessageButton = tab.querySelector('.sendMessageButton');
+                const messageInput = tab.querySelector('.messageInput');
+                const chatbox = tab.querySelector('.chatbox');
+
+                sendMessageButton.addEventListener('click', () => {
+                    sendMessage(messageInput.value);
+                    messageInput.value = '';
+                });
+
+                tabs.forEach(tab => tab.classList.remove('active'));
+                tab.classList.add('active');
+            }
         } else {
             statusDiv.textContent = 'Not connected to server';
         }
     }
 
-    function handleRoomJoin(data) {
-        const { room, users } = data;
-        const tabId = `tab-${room}`;
-
-        if (!document.getElementById(tabId)) {
-            const tabButton = document.createElement('button');
-            tabButton.className = 'tabButton';
-            tabButton.dataset.tab = tabId;
-            tabButton.textContent = room;
-            document.querySelector('.tab-buttons').appendChild(tabButton);
-
-            const tab = document.createElement('div');
-            tab.className = 'tab';
-            tab.id = tabId;
-            tab.innerHTML = `
-                <h3>Chat Room: ${room}</h3>
-                <div class="chatbox"></div>
-                <input type="text" class="messageInput" placeholder="Type a message...">
-                <button class="sendMessageButton">Send</button>
-            `;
-            mainContent.appendChild(tab);
-
-            tabButton.addEventListener('click', () => {
-                tabs.forEach(tab => tab.classList.remove('active'));
-                tab.classList.add('active');
-            });
-
-            const sendMessageButton = tab.querySelector('.sendMessageButton');
-            const messageInput = tab.querySelector('.messageInput');
-            const chatbox = tab.querySelector('.chatbox');
-
-            sendMessageButton.addEventListener('click', () => {
-                sendMessage(room, messageInput.value);
-                messageInput.value = '';
-            });
-
-            tabs.forEach(tab => tab.classList.remove('active'));
-            tab.classList.add('active');
+    async function sendMessage(message) {
+        if (isConnected) {
+            const messageData = {
+                handler: 'room_message',
+                type: 'text',
+                id: generatePacketID(),
+                body: message,
+                room: document.getElementById('room').value,
+                url: '',
+                length: '0'
+            };
+            await sendMessageToSocket(messageData);
+        } else {
+            statusDiv.textContent = 'Not connected to server';
         }
-    }
-
-    function sendMessage(roomName, text) {
-        const message = {
-            handler: 'chat_message',
-            room: roomName,
-            text: text,
-            id: generatePacketID()
-        };
-        socket.send(JSON.stringify(message));
     }
 
     function updateFriendList(users) {
@@ -269,14 +278,14 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchChatrooms() {
         const mucType = 'public_rooms';
         try {
-            const allRooms = await fetchAllChatrooms(mucType);
+            const allRooms = await getAllChatrooms(mucType);
             populateRoomList(allRooms);
         } catch (error) {
             console.error('Error fetching chatrooms:', error);
         }
     }
 
-    async function fetchAllChatrooms(mucType) {
+    async function getAllChatrooms(mucType) {
         let allRooms = [];
         let currentPage = 1;
         let totalPages = 1;
@@ -357,7 +366,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             roomListbox.appendChild(listItem);
 
-            // Add event listener to handle room selection and joining
             listItem.addEventListener('click', () => {
                 joinRoom(room.name);
             });
