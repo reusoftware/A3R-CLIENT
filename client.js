@@ -108,7 +108,85 @@ document.addEventListener('DOMContentLoaded', () => {
             updateFriendList(jsonDict.users);
         } else if (jsonDict.handler === 'room_info') {
             populateRoomList(jsonDict.rooms);
+        } else if (jsonDict.handler === 'room_join') {
+            handleRoomJoin(jsonDict);
+        } else if (jsonDict.handler === 'chat_message') {
+            handleChatMessage(jsonDict);
         }
+    }
+
+    function handleChatMessage(message) {
+        const { room, username, text } = message;
+        const chatbox = document.querySelector(`#tab-${room} .chatbox`);
+        if (chatbox) {
+            const messageElement = document.createElement('div');
+            messageElement.textContent = `${username}: ${text}`;
+            chatbox.appendChild(messageElement);
+        }
+    }
+
+    async function joinRoom(roomName) {
+        if (isConnected) {
+            const joinMessage = {
+                handler: 'room_join',
+                id: generatePacketID(),
+                name: roomName
+            };
+            await sendMessageToSocket(joinMessage);
+        } else {
+            statusDiv.textContent = 'Not connected to server';
+        }
+    }
+
+    function handleRoomJoin(data) {
+        const { room, users } = data;
+        const tabId = `tab-${room}`;
+
+        if (!document.getElementById(tabId)) {
+            const tabButton = document.createElement('button');
+            tabButton.className = 'tabButton';
+            tabButton.dataset.tab = tabId;
+            tabButton.textContent = room;
+            document.querySelector('.tab-buttons').appendChild(tabButton);
+
+            const tab = document.createElement('div');
+            tab.className = 'tab';
+            tab.id = tabId;
+            tab.innerHTML = `
+                <h3>Chat Room: ${room}</h3>
+                <div class="chatbox"></div>
+                <input type="text" class="messageInput" placeholder="Type a message...">
+                <button class="sendMessageButton">Send</button>
+            `;
+            mainContent.appendChild(tab);
+
+            tabButton.addEventListener('click', () => {
+                tabs.forEach(tab => tab.classList.remove('active'));
+                tab.classList.add('active');
+            });
+
+            const sendMessageButton = tab.querySelector('.sendMessageButton');
+            const messageInput = tab.querySelector('.messageInput');
+            const chatbox = tab.querySelector('.chatbox');
+
+            sendMessageButton.addEventListener('click', () => {
+                sendMessage(room, messageInput.value);
+                messageInput.value = '';
+            });
+
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tab.classList.add('active');
+        }
+    }
+
+    function sendMessage(roomName, text) {
+        const message = {
+            handler: 'chat_message',
+            room: roomName,
+            text: text,
+            id: generatePacketID()
+        };
+        socket.send(JSON.stringify(message));
     }
 
     function updateFriendList(users) {
@@ -279,57 +357,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             roomListbox.appendChild(listItem);
 
-            // Add event listener to handle room selection and opening chatbox
+            // Add event listener to handle room selection and joining
             listItem.addEventListener('click', () => {
-                openChatRoom(room.name);
+                joinRoom(room.name);
             });
         });
-    }
-
-    function openChatRoom(roomName) {
-        // Create a new tab for the chat room
-        const newTab = document.createElement('div');
-        newTab.classList.add('tab');
-        newTab.innerHTML = `
-            <h3>Chat Room: ${roomName}</h3>
-            <div class="chatbox"></div>
-            <input type="text" class="messageInput" placeholder="Type a message...">
-            <button class="sendMessageButton">Send</button>
-        `;
-
-        mainContent.appendChild(newTab);
-
-        // Switch to the new tab
-        tabs.forEach(tab => tab.classList.remove('active'));
-        newTab.classList.add('active');
-
-        const sendMessageButton = newTab.querySelector('.sendMessageButton');
-        const messageInput = newTab.querySelector('.messageInput');
-        const chatbox = newTab.querySelector('.chatbox');
-
-        sendMessageButton.addEventListener('click', () => {
-            sendMessage(roomName, messageInput.value);
-            messageInput.value = '';
-        });
-
-        // Receive messages for this chat room
-        socket.addEventListener('message', (event) => {
-            const message = JSON.parse(event.data);
-            if (message.room === roomName) {
-                const messageElement = document.createElement('div');
-                messageElement.textContent = `${message.username}: ${message.text}`;
-                chatbox.appendChild(messageElement);
-            }
-        });
-    }
-
-    function sendMessage(roomName, text) {
-        const message = {
-            handler: 'chat_message',
-            room: roomName,
-            text: text,
-            id: generatePacketID()
-        };
-        socket.send(JSON.stringify(message));
     }
 });
