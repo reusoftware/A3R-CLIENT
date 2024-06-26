@@ -1,6 +1,3 @@
-
-//copy========
-
 document.addEventListener('DOMContentLoaded', () => {
     let socket;
     let isConnected = false;
@@ -93,27 +90,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return `R.U.BULAN©pinoy-2023®#${Math.random().toString(36).substring(7)}`;
     }
 
-  function processReceivedMessage(message) {
-    const jsonDict = JSON.parse(message);
-    debugBox.value += `${message}\n`;
+    function processReceivedMessage(message) {
+        const jsonDict = JSON.parse(message);
+        debugBox.value += `${message}\n`;
 
-    if (jsonDict.handler === 'login_event') {
-        if (jsonDict.type === 'success') {
-            loginForm.style.display = 'none';
-            mainContent.style.display = 'block';
-            statusDiv.textContent = 'Online';
-            fetchFriendList(jsonDict.users);
-            fetchChatrooms();
-        } else {
-            statusDiv.textContent = `Login failed: ${jsonDict.reason}`;
+        if (jsonDict.handler === 'login_event') {
+            if (jsonDict.type === 'success') {
+                loginForm.style.display = 'none';
+                mainContent.style.display = 'block';
+                statusDiv.textContent = 'Online';
+                fetchFriendList(jsonDict.users);
+                fetchChatrooms();
+            } else {
+                statusDiv.textContent = `Login failed: ${jsonDict.reason}`;
+            }
+        } else if (jsonDict.handler === 'roster') {
+            updateFriendList(jsonDict.users);
+        } else if (jsonDict.handler === 'room_info') {
+            populateRoomList(jsonDict.rooms);
         }
-    } else if (jsonDict.handler === 'roster') {
-        updateFriendList(jsonDict.users);
-    } else if (jsonDict.handler === 'room_info') {
-        populateRoomList(jsonDict.rooms);
     }
-}
-
 
     function updateFriendList(users) {
         if (!users || !Array.isArray(users) || users.length === 0) {
@@ -176,6 +172,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         friendListbox.appendChild(onlineList);
         friendListbox.appendChild(offlineList);
+
+        // Automatically expand the friend list tab if there are friends
+        if (users.length > 0) {
+            friendListTab.classList.add('active');
+        }
     }
 
     async function fetchFriendList(users) {
@@ -277,6 +278,58 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             roomListbox.appendChild(listItem);
+
+            // Add event listener to handle room selection and opening chatbox
+            listItem.addEventListener('click', () => {
+                openChatRoom(room.name);
+            });
         });
+    }
+
+    function openChatRoom(roomName) {
+        // Create a new tab for the chat room
+        const newTab = document.createElement('div');
+        newTab.classList.add('tab');
+        newTab.innerHTML = `
+            <h3>Chat Room: ${roomName}</h3>
+            <div class="chatbox"></div>
+            <input type="text" class="messageInput" placeholder="Type a message...">
+            <button class="sendMessageButton">Send</button>
+        `;
+
+        mainContent.appendChild(newTab);
+
+        // Switch to the new tab
+        tabs.forEach(tab => tab.classList.remove('active'));
+        newTab.classList.add('active');
+
+        const sendMessageButton = newTab.querySelector('.sendMessageButton');
+        const messageInput = newTab.querySelector('.messageInput');
+        const chatbox = newTab.querySelector('.chatbox');
+
+        sendMessageButton.addEventListener('click', () => {
+            sendMessage(roomName, messageInput.value);
+            messageInput.value = '';
+        });
+
+        // Receive messages for this chat room
+        socket.addEventListener('message', (event) => {
+            const message = JSON.parse(event.data);
+            if (message.room === roomName) {
+                const messageElement = document.createElement('div');
+                messageElement.textContent = `${message.username}: ${message.text}`;
+                chatbox.appendChild(messageElement);
+            }
+        });
+    }
+
+    function sendMessage(roomName, text) {
+        const message = {
+            handler: 'chat_message',
+            room: roomName,
+            text: text,
+            id: generatePacketID()
+        };
+        socket.send(JSON.stringify(message));
     }
 });
