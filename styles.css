@@ -10,10 +10,12 @@ body {
 }
 
 .logo {
-    width: 100px;
+    display: block;
+    margin: 0 auto 20px auto; /* Center the logo and add some margin at the bottom */
+    width: 100px; /* Adjust the size as needed */
     height: auto;
-    margin-bottom: 20px;
 }
+
 
 #username, #password {
     margin-bottom: 10px;
