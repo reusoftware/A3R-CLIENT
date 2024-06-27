@@ -112,6 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
             handleRoomEvent(jsonDict);
         } else if (jsonDict.handler === 'chat_message') {
             handleChatMessage(jsonDict);
+        } else if (jsonDict.handler === 'list_room') {
+            updateRoomList(jsonDict.rooms);
         }
     }
 
@@ -247,136 +249,163 @@ document.addEventListener('DOMContentLoaded', () => {
                 role: messageObj.role,
                 avatar: messageObj.avatar_url
             });
-        } else if (type === 'error') {
-            displayChatMessage({ from: '', body: `**ERROR**: ${messageObj.body}`, role }, 'red');
-        } else if (type === 'captcha') {
+        }
+
+        if (role === 'visitor' && type === 'you_joined') {
+            displayCaptchaForm();
+        }
+
+        if (type === 'captcha_request') {
+            displayCaptchaForm();
+        }
+
+        if (type === 'captcha_failed') {
             const chatbox = document.querySelector(`#tab-${roomName} .chatbox`);
             if (chatbox) {
-                const captchaImg = document.createElement('img');
-                captchaImg.src = messageObj.url;
-                captchaImg.alt = 'Captcha';
-                captchaImg.className = 'captcha-img';
-
-                const captchaTextbox = document.createElement('input');
-                captchaTextbox.type = 'text';
-                captchaTextbox.className = 'captcha-textbox';
-
-                const sendCaptchaButton = document.createElement('button');
-                sendCaptchaButton.textContent = 'Submit Captcha';
-                sendCaptchaButton.className = 'send-captcha-button';
-
-                chatbox.appendChild(captchaImg);
-                chatbox.appendChild(captchaTextbox);
-                chatbox.appendChild(sendCaptchaButton);
-
-                sendCaptchaButton.addEventListener('click', async () => {
-                    const captchaResponse = captchaTextbox.value;
-                    const captchaMessage = {
-                        handler: 'captcha_response',
-                        room: roomName,
-                        response: captchaResponse
-                    };
-                    await sendMessageToSocket(captchaMessage);
-                });
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                messageElement.classList.add('captcha-failed');
+                messageElement.textContent = 'Captcha failed. Please try again.';
+                chatbox.appendChild(messageElement);
             }
-        } else if (type === 'subject') {
-            displayChatMessage({
-                from: messageObj.from,
-                body: `Subject is now ${messageObj.subject} (by ${messageObj.subject_author})`,
-                role: messageObj.role,
-                avatar: messageObj.avatar_url
-            });
+        }
+
+        if (type === 'captcha_passed') {
+            const chatbox = document.querySelector(`#tab-${roomName} .chatbox`);
+            if (chatbox) {
+                const captchaImg = chatbox.querySelector('.captcha-img');
+                const captchaTextbox = chatbox.querySelector('.captcha-textbox');
+                const sendCaptchaButton = chatbox.querySelector('.send-captcha-button');
+                if (captchaImg && captchaTextbox && sendCaptchaButton) {
+                    chatbox.removeChild(captchaImg);
+                    chatbox.removeChild(captchaTextbox);
+                    chatbox.removeChild(sendCaptchaButton);
+                }
+            }
         }
 
         updateUserListbox();
+        statusDiv.textContent = `Total User: ${count}`;
+    }
+
+    function displayCaptchaForm() {
+        const captchaFormHTML = `
+            <div class="captcha-img"></div>
+            <input type="text" class="captcha-textbox" placeholder="Enter CAPTCHA">
+            <button class="send-captcha-button">Send CAPTCHA</button>
+        `;
+        const chatbox = document.querySelector('.chatbox');
+        chatbox.insertAdjacentHTML('beforeend', captchaFormHTML);
+
+        const sendCaptchaButton = chatbox.querySelector('.send-captcha-button');
+        const captchaTextbox = chatbox.querySelector('.captcha-textbox');
+
+        sendCaptchaButton.addEventListener('click', () => {
+            const captchaValue = captchaTextbox.value;
+            if (captchaValue) {
+                const captchaMessage = {
+                    handler: 'captcha_send',
+                    id: generatePacketID(),
+                    text: captchaValue
+                };
+                sendMessageToSocket(captchaMessage);
+            }
+        });
     }
 
     async function fetchFriendList(users) {
-        if (isConnected) {
-            friendListbox.innerHTML = '';
-            users.forEach(user => {
-                const listItem = document.createElement('li');
-                listItem.className = 'list-item';
-                listItem.dataset.username = user.username;
-                listItem.textContent = user.username;
-                friendListbox.appendChild(listItem);
-            });
-        } else {
-            statusDiv.textContent = 'Not connected to server';
-        }
-    }
-
-    async function fetchChatrooms() {
-        if (isConnected) {
-            const listRoom = {
-                handler: 'list_room',
-                id: generatePacketID()
-            };
-            await sendMessageToSocket(listRoom);
-        } else {
-            statusDiv.textContent = 'Not connected to server';
-        }
-    }
-
-    async function fetchUserList(roomName) {
-        if (isConnected) {
-            const listUser = {
-                handler: 'list_user',
-                id: generatePacketID(),
-                room: roomName
-            };
-            await sendMessageToSocket(listUser);
-        } else {
-            statusDiv.textContent = 'Not connected to server';
-        }
+        updateFriendList(users);
     }
 
     function updateFriendList(users) {
         friendListbox.innerHTML = '';
         users.forEach(user => {
-            const listItem = document.createElement('li');
-            listItem.className = 'list-item';
-            listItem.dataset.username = user.username;
-            listItem.textContent = user.username;
-            friendListbox.appendChild(listItem);
+            const option = document.createElement('option');
+            option.value = user;
+            option.textContent = user;
+            friendListbox.appendChild(option);
         });
     }
 
-    function displayChatMessage(message, color = 'black') {
-        const { from, body, bodyurl, role, avatar } = message;
-        const roomName = document.getElementById('room').value;
-
-        const chatbox = document.querySelector(`#tab-${roomName} .chatbox`);
-        if (chatbox) {
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message');
-            messageElement.style.color = color;
-
-            if (avatar) {
-                const avatarElement = document.createElement('img');
-                avatarElement.src = avatar;
-                avatarElement.classList.add('avatar');
-                messageElement.appendChild(avatarElement);
-            }
-
-            const fromElement = document.createElement('span');
-            fromElement.classList.add('username');
-            fromElement.textContent = from ? `${from}: ` : '';
-            messageElement.appendChild(fromElement);
-
-            const textElement = document.createElement('span');
-            textElement.classList.add('message-text');
-            textElement.textContent = body;
-            if (bodyurl) {
-                const imgElement = document.createElement('img');
-                imgElement.src = bodyurl;
-                textElement.appendChild(imgElement);
-            }
-            messageElement.appendChild(textElement);
-
-            chatbox.appendChild(messageElement);
+    async function fetchChatrooms() {
+        if (isConnected) {
+            const listRoomsMessage = {
+                handler: 'list_room',
+                id: generatePacketID()
+            };
+            await sendMessageToSocket(listRoomsMessage);
         }
     }
+
+    function updateRoomList(rooms) {
+        roomListbox.innerHTML = '';
+        rooms.forEach(room => {
+            const option = document.createElement('option');
+            option.value = room;
+            option.textContent = room;
+            roomListbox.appendChild(option);
+        });
+    }
+
+    async function fetchUserList(roomName) {
+        if (isConnected) {
+            const listUsersMessage = {
+                handler: 'list_users',
+                id: generatePacketID(),
+                room: roomName
+            };
+            await sendMessageToSocket(listUsersMessage);
+        }
+    }
+
+    function updateUserListbox() {
+        const userListbox = document.getElementById('userListbox');
+        userListbox.innerHTML = '';
+        userList.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.username;
+            option.textContent = user.username;
+            userListbox.appendChild(option);
+        });
+    }
+
+    function displayChatMessage({ from, body, bodyurl, role, avatar }) {
+        const chatbox = document.querySelector('.chatbox');
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+
+        if (avatar) {
+            const avatarElement = document.createElement('img');
+            avatarElement.src = avatar;
+            avatarElement.classList.add('avatar');
+            messageElement.appendChild(avatarElement);
+        }
+
+        const fromElement = document.createElement('span');
+        fromElement.classList.add('from');
+        fromElement.textContent = from || '';
+
+        const bodyElement = document.createElement('span');
+        bodyElement.classList.add('body');
+        if (bodyurl) {
+            const imageElement = document.createElement('img');
+            imageElement.src = bodyurl;
+            bodyElement.appendChild(imageElement);
+        } else {
+            bodyElement.textContent = body || '';
+        }
+
+        const roleElement = document.createElement('span');
+        roleElement.classList.add('role');
+        roleElement.textContent = role || '';
+
+        messageElement.appendChild(fromElement);
+        messageElement.appendChild(bodyElement);
+        messageElement.appendChild(roleElement);
+        chatbox.appendChild(messageElement);
+    }
+//});
+
 
     async function sendMessage(message, roomName) {
         const messagePacket = {
