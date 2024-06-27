@@ -108,11 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } else if (jsonDict.handler === 'roster') {
             updateFriendList(jsonDict.users);
-        } else if (jsonDict.handler === 'room_info') {
-            populateRoomList(jsonDict.rooms);
         } else if (jsonDict.handler === 'room_event') {
-            handleRoomJoin(jsonDict);
-            handleChatMessage(jsonDict)
+            handleRoomEvent(jsonDict);
         } else if (jsonDict.handler === 'chat_message') {
             handleChatMessage(jsonDict);
         }
@@ -208,10 +205,7 @@ function handleChatMessage(message) {
   
     if (type === 'you_joined') {
         displayChatMessage({ from: '', body: `**You** joined the room as ${role}` });
-       await chat('syntax-error',`Join the  ${roomName }`);
-  joinlog.textContent = `You Join the  ${roomName }`;
-        // Display room subject with proper HTML rendering
-        displayRoomSubject(`Room subject: ${messageObj.subject} (by ${messageObj.subject_author})`);
+    displayRoomSubject(`Room subject: ${messageObj.subject} (by ${messageObj.subject_author})`);
 
         // Display list of users with roles
         messageObj.users.forEach(user => {
@@ -235,47 +229,16 @@ statusCount.textContent = `Total User: ${count}`;
             await setRole(userName, 'outcast');
         }
 
-        if (sendWelcomeMessages) {
-            const welcomeMessages = [
-                `welcome ${userName}`,
-                `Nice to see you here ${userName}`,
-                `Hi ${userName}`,
-                `Welcome ${userName} here at ${roomName}`,
-                `how are you ${userName}`,
-                `welcome to ${roomName} ${userName}`
-            ];
-            const randomWelcomeMessage = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
-            await sendMessage(randomWelcomeMessage);
-        }
+        
         // Add the new user to the user list
         userList.push({ username: userName, role });
         updateUserListbox();
        statusCount.textContent = `Total User: ${count}`;
     } else if (type === 'user_left') {
         displayChatMessage({ from: userName, body: 'left the room.', role }, 'darkgreen');
- //statusCount.textContent = `Total User: ${count}`;
-   //   userListbox.textContent = `Current User: ${count}`;
-             statusCount.textContent = `Total User: ${count}`;
-//  joinlog.textContent = `you join the  ${roomName }`;
-       if (sendWelcomeMessages) {
-            const goodbyeMessage = `Bye ${userName}!`;
-            await sendMessage(goodbyeMessage);
-        }
-
-        // Remove the user from the user list
         userList = userList.filter(user => user.username !== userName);
         updateUserListbox();
-
-  bombStates = bombStates.filter(bombState => {
-        if (bombState.bomber === userName || bombState.target === userName) {
-            // If the bomber or target leaves, reset the bomb state
-            clearTimeout(bombState.timer);
-            return false;
-        }
-        return true;
-    });
-
-
+ 
     } else if (type === 'text') {
     const body = messageObj.body;
     const from = messageObj.from;
@@ -288,169 +251,6 @@ const roomName = messageObj.room
         avatar: messageObj.avatar_url
     });
 
-
-const trimmedBody = body.trim();
-//if (masterInput.value === from || isInMasterList(currentRoomName, from)) {
-
-if (masterInput.value === from || isInMasterList(roomName, from)) {
-    if (body.startsWith('+qs')) {
-        await activateQuiz();
-    } else if (body.startsWith('-qs')) {
-        await deactivateQuiz();
-    } else if (body.startsWith('+wc')) {
-        welcomeCheckbox.checked = true;
-        sendWelcomeMessages = true;
-        await sendMessage('Welcome messages Activated.');
-    } else if (body.startsWith('-wc')) {
-        welcomeCheckbox.checked = false;
-        sendWelcomeMessages = false;
-        await sendMessage('Welcome messages Deactivated.');
-    } else if (body.startsWith('.help')) {
-        const messageData = `===FOR BOT OWNER COMMANDS===\n+qs/-qs = For Scramble Quiz.\n+wc/-wc = For Welcome.\n+spin/-spin = For Spin.\nmas+username = to add master\nmas-username = to remove master\nmaslist = to get master list.\nk@username = to kick user\nb@username = to ban user\nn@username = to none user\nm@username = to member user\na@username = to admin user\no@username = to make owner user===FOR USER COMMANDS===\npv@username = to view user profile.\n.s = to spin.\n.bt = to view Best Time User Answer on quiz.\n.win = to view whos winner on quiz\n.top = to view top10 on quiz.`;
-        await sendMessage(messageData);
-    } else if (body.startsWith('+spin')) {
-        spinCheckbox.checked = true;
-        sendspinMessages = true;
-        await sendMessage('Spin Activated.');
-    } else if (body.startsWith('-spin')) {
-        spinCheckbox.checked = false;
-        sendspinMessages = false;
-        await sendMessage('Spin Deactivated.');
-  } else if (body.startsWith('k@')) {
-        const masuser = trimmedBody.slice(2).trim();
- await kickUser(masuser);
-} else if (body.startsWith('b@')) {
-        const masuser = trimmedBody.slice(2).trim();
-  await setRole(masuser, 'outcast');
-} else if (body.startsWith('m@')) {
-        const masuser = trimmedBody.slice(2).trim();
-  await setRole(masuser, 'member');
-} else if (body.startsWith('a@')) {
-        const masuser = trimmedBody.slice(2).trim();
-  await setRole(masuser, 'admin');
-} else if (body.startsWith('o@')) {
-        const masuser = trimmedBody.slice(2).trim();
-  await setRole(masuser, 'owner');
-} else if (body.startsWith('n@')) {
-        const masuser = trimmedBody.slice(2).trim();
-  await setRole(masuser, 'none');
-    } else if (body.startsWith('mas+')) {
-        const masuser = trimmedBody.slice(4).trim(); // Extract the username after 'mas+'
-        console.log(`Extracted username: ${masuser}`);
-        if (masuser) {
-            if (addToMasterList(roomName, masuser)) {
-                await sendMessage(`${masuser} added to the master list for ${roomName}.`);
-            } else {
-                await sendMessage(`${masuser} is already in the master list for ${roomName}.`);
-            }
-        } else {
-            await sendMessage('Please provide a valid username.');
-        }
-    } else if (body.startsWith('mas-')) {
-        const masuser = trimmedBody.slice(4).trim(); // Extract the username after 'mas-'
-        console.log(`Extracted username: ${masuser}`);
-        if (masuser) {
-            if (removeFromMasterList(roomName, masuser)) {
-                await sendMessage(`${masuser} removed from the master list for ${roomName}.`);
-            } else {
-                await sendMessage(`${masuser} is not in the master list for ${roomName}.`);
-            }
-        } else {
-            await sendMessage('Please provide a valid username.');
-        }
-    } else if (body === 'maslist') {
-        if (roomMasterLists[roomName] && roomMasterLists[roomName].length > 0) {
-            await sendMessage(`Master List for ${roomName}: ${roomMasterLists[roomName].join(', ')}`);
-        } else {
-            await sendMessage(`Master List for ${roomName} is empty.`);
-        }
-    }
-}// else {
-
-//=================================================
-   
- if (trimmedBody.startsWith('.p ')) {  
-ur =from;
-    yts = trimmedBody.slice(3).trim();
- console.log(`Detected 'play@' prefix in message: ${yts}`);
-  await  yt();
-   
-}else  if (trimmedBody.startsWith('pv@')) {
-        console.log(`Detected 'pv@' prefix in message: ${trimmedBody}`);
-        const username = trimmedBody.slice(3).trim(); // Extract the username after 'pv@'
-        console.log(`Extracted username: ${username}`);
-        const packetID = generatePacketID(); // Assuming you have a function to generate packet IDs
-        const message = {
-            handler: 'profile_other',
-            type: username,
-            id: packetID
-        };
-        console.log(`Sending profile_other message: ${JSON.stringify(message)}`);
-        await sendMessageToSocket(message);
-
-    } else if (activateQuizCheckbox && activateQuizCheckbox.checked) {
-        if (from !== usernameInput.value) {
-            const userMessage = body.trim().toLowerCase();
-            await handleUserAnswer(from, userMessage);
-        }
-    } else if (trimmedBody.startsWith('.bt')) {
-        await sendBestTime();
-
-} else if (trimmedBody.startsWith('.top')) {
-        await getTop10Users();
-    } else if (trimmedBody.startsWith('.win')) {
-        await getWinner();
-       
- } else if (sendspinMessages && body === '.s') {
-
-        const responses = [
-            `Let's Drink ${from} (っ＾▿＾)۶🍸🌟🍺٩(˘◡˘ )`,
-            `Let's Eat ( ◑‿◑)ɔ┏🍟--🍔┑٩(^◡^ ) ${from}`,
-            `${from} you got ☔ Umbrella from me`,
-            `You got a pair of shoes 👟👟 ${from}`,
-            `Dress and Pants 👕 👖 for you ${from}`,
-            `💻 Laptop for you ${from}`,
-            `Great! ${from} you can travel now ✈️`,
-            `${from} you have an apple 🍎`,
-            `kick`,
-            `plantbomb`,
-            `bombshield`,
-            `Carrots for you 🥕 ${from}`,
-            `${from} you got an ice cream 🍦`,
-            `🍺 🍻 Beer for you ${from}`,
-            `You wanna game with me 🏀 ${from}`,
-            `Guitar 🎸 for you ${from}`,
-            `For you❤️ ${from}`
-        ];
-        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-        if (randomResponse === 'kick') {
-            await sendMessage(`Sorry! You Got Kick ${from}`);
-            await kickUser(from);
-        } else {
-
-//========================
- const userData = getUserData(username);  
-    if (randomResponse === 'plantbomb') {
-        userData.bombs += 1;
-        sendMessageToChat(`Congrats ${from}, you got a plant bomb! You have a total of ${userData.bombs} plant bombs.`);
-    } else if (randomResponse === 'bombshield') {
-        userData.shields += 1;
-        sendMessageToChat(`Congrats ${from}, you got a bomb shield! You have a total of ${userData.shields} bomb shields.`);
-    } else {
-      //  sendMessageToChat(`Sorry ${from}, you didn't win anything this time.`);
-       await sendMessage(randomResponse);
-    }  
-    saveUserData(username, userData);
-
-        }
-    } else if (body === 'bomb') {
-            handleCommand(from, body);
-        } else if (bombStates.length > 0) {
-            handleTargetSelection(from, body);
-            handleWireSelection(from, body);
-
-}
-//================================
 
     } else if (type === 'image') {
         const bodyurl = messageObj.url;
@@ -530,9 +330,185 @@ else  if (type === 'gift') {
 
 
 
+    function displayChatMessage(messageObj, color = 'black') {
+    const { from, body, bodyurl, role, avatar, type } = messageObj;
+    const newMessage = document.createElement('div');
+    newMessage.style.display = 'flex';
+    newMessage.style.alignItems = 'center';
+    newMessage.style.marginBottom = '10px';
+
+    // Add avatar if available
+    if (avatar) {
+        const avatarContainer = document.createElement('div');
+        avatarContainer.className = 'avatar-container';
+
+        const avatarImg = document.createElement('img');
+        avatarImg.src = avatar;
+        avatarImg.alt = `${from}'s avatar`;
+        avatarImg.style.width = '40px';
+        avatarImg.style.height = '40px';
+        avatarImg.style.borderRadius = '50%';
+        avatarImg.style.marginRight = '10px';
+        avatarContainer.appendChild(avatarImg);
+
+        const starColor = getRoleColor(role);
+        if (starColor) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.color = starColor;
+            avatarContainer.appendChild(star);
+        }
+
+        newMessage.appendChild(avatarContainer);
+    }
+
+    // Add the sender's name with role-based color if available
+    if (from) {
+        const coloredFrom = document.createElement('span');
+        coloredFrom.textContent = `${from}: `;
+        coloredFrom.style.color = getRoleColor(role) || 'black';
+        coloredFrom.style.fontWeight = 'bold';
+        newMessage.appendChild(coloredFrom);
+    }
+
+    // Handle different message types
+    if (type === 'gift') {
+        // Construct the gift message display
+        const giftMessage = document.createElement('span');
+        giftMessage.innerHTML = `
+            Gift from ${messageObj.from} to ${messageObj.to} in ${messageObj.toRoom}<br>
+            Gift: ${messageObj.gift}<br>
+            Resources: ${messageObj.resources}<br>
+            Repeats: ${messageObj.repeats}<br>
+            Animation: ${messageObj.animation}<br>
+            Room: ${messageObj.room}<br>
+            User ID: ${messageObj.userId}<br>
+            Timestamp: ${new Date(parseInt(messageObj.timestamp)).toLocaleString()}<br>
+            ID: ${messageObj.id}
+        `;
+        giftMessage.style.color = color;
+        newMessage.appendChild(giftMessage);
+    } else {
+        // Check if the bodyurl is an audio file by checking the file extension
+        if (type === 'audio' && bodyurl) {
+            const audioElement = document.createElement('audio');
+            audioElement.src = bodyurl;
+            audioElement.controls = true; // Enable built-in controls for the audio player
+            newMessage.appendChild(audioElement);
+        } 
+        // If the bodyurl is an image URL
+        else if (bodyurl && bodyurl.match(/\.(jpeg|jpg|gif|png)$/i)) {
+            const imageElement = document.createElement('img');
+            imageElement.src = bodyurl;
+            imageElement.style.maxWidth = '140px'; // Set maximum width for the image
+            newMessage.appendChild(imageElement);
+        } 
+        // For regular text messages
+        else {
+            const messageBody = document.createElement('span');
+            messageBody.textContent = body;
+            messageBody.style.color = color;
+            newMessage.appendChild(messageBody);
+        }
+    }
+
+    // Append the new message to the chatbox and scroll to the bottom
+    const chatbox = document.getElementById('chatbox');
+    chatbox.appendChild(newMessage);
+    chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+//=======================
+
+function displayRoomSubject(subject) {
+    const newMessage = document.createElement('div');
+    newMessage.innerHTML = subject;
+    chatbox.appendChild(newMessage);
+    chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+function getRoleColor(role) {
+    switch (role) {
+        case 'creator':
+            return 'orange';
+        case 'owner':
+            return 'red';
+        case 'admin':
+            return 'blue';
+        case 'member':
+            return 'green';
+        default:
+            return 'grey';
+    }
+}
 
 
+function getRoleChangeColor(newRole) {
+    switch (newRole) {
+        case 'kick':
+            return 'red';
+        case 'outcast':
+            return 'orange';
+        case 'member':
+        case 'admin':
+        case 'owner':
+            return 'blue';
+        default:
+            return 'black';
+    }
+}
 
+   
+async function setRole(username, role) {
+        const obj2 = {
+            handler: 'room_admin',
+            type: 'change_role',
+            id: generatePacketID(),
+             room: document.getElementById('room').value, 
+            t_username: username,
+            t_role: role
+        };
+        await sendMessageToSocket(obj2);  
+}
+
+    async function kickUser(username) {
+        const kickMessage = {
+            handler: "room_admin",
+            type: "kick",
+            id: generatePacketID(),
+            room: document.getElementById('room').value,
+            t_username: username,
+            t_role: "none"
+        };
+        await sendMessageToSocket(kickMessage);
+    }
+
+ function updateUserListbox() {
+ function updateUserListbox() {
+    userListbox.innerHTML = '';
+
+    const sortedUsers = userList.sort((a, b) => {
+        const roles = ['creator', 'owner', 'admin', 'member', 'none'];
+        return roles.indexOf(a.role) - roles.indexOf(b.role);
+    });
+
+    sortedUsers.forEach(user => {
+        // Create and append the avatar image
+        const avatarImg = document.createElement('img');
+        avatarImg.src = user.avatar; // Set the src attribute to the user's avatar URL
+        avatarImg.alt = `${user.username}'s avatar`;
+        avatarImg.style.width = '20px'; // Adjust the width of the avatar as needed
+        avatarImg.style.height = '20px'; // Adjust the height of the avatar as needed
+
+        // Create and append the option element
+        const option = document.createElement('option');
+        option.appendChild(avatarImg); // Append the avatar image
+        option.appendChild(document.createTextNode(`${user.username} (${user.role})`)); // Append the username and role
+        option.style.color = getRoleColor(user.role);  // Apply color based on role
+
+        userListbox.appendChild(option);
+    });
+}
 
 
 
