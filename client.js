@@ -116,8 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             handleChatMessage(jsonDict);
         }
     }
-
-    async function joinRoom(roomName) {
+async function joinRoom(roomName) {
     if (isConnected) {
         const joinMessage = {
             handler: 'room_join',
