@@ -228,16 +228,10 @@ statusCount.textContent = `Total User: ${count}`;
        if (userName === 'prateek') {
             await setRole(userName, 'outcast');
         }
-
-        
-        // Add the new user to the user list
-        userList.push({ username: userName, role });
-        updateUserListbox();
-       statusCount.textContent = `Total User: ${count}`;
-    } else if (type === 'user_left') {
+   } else if (type === 'user_left') {
         displayChatMessage({ from: userName, body: 'left the room.', role }, 'darkgreen');
         userList = userList.filter(user => user.username !== userName);
-        updateUserListbox();
+        
  
     } else if (type === 'text') {
     const body = messageObj.body;
