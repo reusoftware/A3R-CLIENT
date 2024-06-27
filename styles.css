@@ -29,6 +29,7 @@ body {
 
 #status {
     margin-top: 20px;
+    color: red; /* Added color for visibility */
 }
 
 #mainContent {
