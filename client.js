@@ -110,8 +110,9 @@ document.addEventListener('DOMContentLoaded', () => {
             updateFriendList(jsonDict.users);
         } else if (jsonDict.handler === 'room_info') {
             populateRoomList(jsonDict.rooms);
-        } else if (jsonDict.handler === 'room_join') {
+        } else if (jsonDict.handler === 'room_event') {
             handleRoomJoin(jsonDict);
+            handleChatMessage(jsonDict)
         } else if (jsonDict.handler === 'chat_message') {
             handleChatMessage(jsonDict);
         }
