@@ -117,69 +117,87 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function handleChatMessage(message) {
-        const { room, username, text } = message;
-        const chatbox = document.querySelector(`#tab-${room} .chatbox`);
-        if (chatbox) {
-            const messageElement = document.createElement('div');
-            messageElement.textContent = `${username}: ${text}`;
-            chatbox.appendChild(messageElement);
-        }
-    }
-
     async function joinRoom(roomName) {
-        if (isConnected) {
-            const joinMessage = {
-                handler: 'room_join',
-                id: generatePacketID(),
-                name: roomName
-            };
-            await sendMessageToSocket(joinMessage);
-            await fetchUserList(roomName);
+    if (isConnected) {
+        const joinMessage = {
+            handler: 'room_join',
+            id: generatePacketID(),
+            name: roomName
+        };
+        await sendMessageToSocket(joinMessage);
+        await fetchUserList(roomName);
 
-            const roomInput = document.getElementById('room');
-            roomInput.value = roomName;
+        const roomInput = document.getElementById('room');
+        roomInput.value = roomName;
 
-            const tabId = `tab-${roomName}`;
-            if (!document.getElementById(tabId)) {
-                const tabButton = document.createElement('button');
-                tabButton.className = 'tabButton';
-                tabButton.dataset.tab = tabId;
-                tabButton.textContent = roomName;
-                document.querySelector('.tab-buttons').appendChild(tabButton);
+        const tabId = `tab-${roomName}`;
+        if (!document.getElementById(tabId)) {
+            const tabButton = document.createElement('button');
+            tabButton.className = 'tabButton';
+            tabButton.dataset.tab = tabId;
+            tabButton.textContent = roomName;
+            document.querySelector('.tab-controls').appendChild(tabButton);
 
-                const tab = document.createElement('div');
-                tab.className = 'tab';
-                tab.id = tabId;
-                tab.innerHTML = `
-                    <h3>Chat Room: ${roomName}</h3>
-                    <div class="chatbox"></div>
-                    <input type="text" class="messageInput" placeholder="Type a message...">
-                    <button class="sendMessageButton">Send</button>
-                `;
-                mainContent.appendChild(tab);
+            const tabContent = document.createElement('div');
+            tabContent.className = 'tab-content';
+            tabContent.id = tabId;
+            tabContent.innerHTML = `
+                <h3>Chat Room: ${roomName}</h3>
+                <div class="chatbox"></div>
+                <input type="text" class="messageInput" placeholder="Type a message...">
+                <button class="sendMessageButton">Send</button>
+            `;
+            document.querySelector('.tab-content').appendChild(tabContent);
 
-                tabButton.addEventListener('click', () => {
-                    tabs.forEach(tab => tab.classList.remove('active'));
-                    tab.classList.add('active');
-                });
+            tabButton.addEventListener('click', () => {
+                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                tabContent.classList.add('active');
+            });
 
-                const sendMessageButton = tab.querySelector('.sendMessageButton');
-                const messageInput = tab.querySelector('.messageInput');
-                const chatbox = tab.querySelector('.chatbox');
+            const sendMessageButton = tabContent.querySelector('.sendMessageButton');
+            const messageInput = tabContent.querySelector('.messageInput');
+            const chatbox = tabContent.querySelector('.chatbox');
 
-                sendMessageButton.addEventListener('click', () => {
-                    sendMessage(messageInput.value);
-                    messageInput.value = '';
-                });
+            sendMessageButton.addEventListener('click', () => {
+                sendMessage(messageInput.value);
+                messageInput.value = '';
+            });
 
-                tabs.forEach(tab => tab.classList.remove('active'));
-                tab.classList.add('active');
-            }
-        } else {
-            statusDiv.textContent = 'Not connected to server';
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            tabContent.classList.add('active');
         }
+    } else {
+        statusDiv.textContent = 'Not connected to server';
     }
+}
+
+function handleChatMessage(message) {
+    const { room, username, text, avatar } = message;
+    const chatbox = document.querySelector(`#tab-${room} .chatbox`);
+    if (chatbox) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        
+        const avatarElement = document.createElement('img');
+        avatarElement.src = avatar || 'default-avatar.png';
+        avatarElement.classList.add('avatar');
+        
+        const usernameElement = document.createElement('span');
+        usernameElement.classList.add('username');
+        usernameElement.textContent = username;
+        
+        const textElement = document.createElement('span');
+        textElement.classList.add('message-text');
+        textElement.textContent = text;
+
+        messageElement.appendChild(avatarElement);
+        messageElement.appendChild(usernameElement);
+        messageElement.appendChild(textElement);
+        chatbox.appendChild(messageElement);
+    }
+}
+
+    
 
     async function sendMessage(message) {
         if (isConnected) {
