@@ -93,32 +93,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function processReceivedMessage(message) {
-        const jsonDict = JSON.parse(message);
-        debugBox.value += `${message}\n`;
+    function processReceivedMessage(message) {
+    console.log('Received message:', message); // Add this line
+    const jsonDict = JSON.parse(message);
+    debugBox.value += `${message}\n`;
 
-        if (jsonDict.handler === 'login_event') {
-            if (jsonDict.type === 'success') {
-                loginForm.style.display = 'none';
-                mainContent.style.display = 'block';
-                statusDiv.textContent = 'Online';
-                console.log('Login successful. Users:', jsonDict.users);
-                fetchFriendList(jsonDict.users);
-                fetchChatrooms();
-            } else {
-                statusDiv.textContent = `Login failed: ${jsonDict.reason}`;
-            }
-        } else if (jsonDict.handler === 'roster') {
-            console.log('Roster received. Users:', jsonDict.users);
-            updateFriendList(jsonDict.users);
-        } else if (jsonDict.handler === 'room_event') {
-            handleRoomEvent(jsonDict);
-        } else if (jsonDict.handler === 'chat_message') {
-            handleChatMessage(jsonDict);
-        } else if (jsonDict.handler === 'list_room') {
-            console.log('Room list received. Rooms:', jsonDict.rooms);
-            updateRoomList(jsonDict.rooms);
+    if (jsonDict.handler === 'login_event') {
+        if (jsonDict.type === 'success') {
+            loginForm.style.display = 'none';
+            mainContent.style.display = 'block';
+            statusDiv.textContent = 'Online';
+            console.log('Login successful. Users:', jsonDict.users);
+            fetchFriendList(jsonDict.users);
+            fetchChatrooms();
+        } else {
+            statusDiv.textContent = `Login failed: ${jsonDict.reason}`;
         }
+    } else if (jsonDict.handler === 'roster') {
+        console.log('Roster received. Users:', jsonDict.users); // Add this line
+        updateFriendList(jsonDict.users);
+    } else if (jsonDict.handler === 'room_event') {
+        handleRoomEvent(jsonDict);
+    } else if (jsonDict.handler === 'chat_message') {
+        handleChatMessage(jsonDict);
+    } else if (jsonDict.handler === 'list_room') {
+        console.log('Room list received. Rooms:', jsonDict.rooms); // Add this line
+        updateRoomList(jsonDict.rooms);
     }
+}
+
 
     async function joinRoom(roomName) {
         if (isConnected) {
@@ -255,19 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await sendMessageToSocket(listRoomsMessage);
     }
 
-    function updateRoomList(rooms) {
-        roomListbox.innerHTML = '';
-        rooms.forEach(room => {
-            const option = document.createElement('li');
-            option.textContent = room.name;
-            option.classList.add('room');
-            roomListbox.appendChild(option);
-
-            option.addEventListener('click', () => {
-                joinRoom(room.name);
-            });
-        });
-    }
+    
 
     async function fetchFriendList(users) {
         const friendListMessage = {
@@ -278,15 +269,32 @@ document.addEventListener('DOMContentLoaded', () => {
         await sendMessageToSocket(friendListMessage);
     }
 
-    function updateFriendList(users) {
-        friendListbox.innerHTML = '';
-        users.forEach(user => {
-            const option = document.createElement('li');
-            option.textContent = user.username;
-            option.classList.add('friend');
-            friendListbox.appendChild(option);
+    function updateRoomList(rooms) {
+    console.log('Updating room list:', rooms); // Add this line
+    roomListbox.innerHTML = '';
+    rooms.forEach(room => {
+        const option = document.createElement('li');
+        option.textContent = room.name;
+        option.classList.add('room');
+        roomListbox.appendChild(option);
+
+        option.addEventListener('click', () => {
+            joinRoom(room.name);
         });
-    }
+    });
+}
+
+function updateFriendList(users) {
+    console.log('Updating friend list:', users); // Add this line
+    friendListbox.innerHTML = '';
+    users.forEach(user => {
+        const option = document.createElement('li');
+        option.textContent = user.username;
+        option.classList.add('friend');
+        friendListbox.appendChild(option);
+    });
+}
+
 
     function sendMessage(text, room) {
         const chatMessage = {
