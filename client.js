@@ -16,24 +16,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const friendListbox = document.getElementById('friendListbox');
 
     loginButton.addEventListener('click', async () => {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        currentUsername = username;
-        await connectWebSocket(username, password);
-    });
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    currentUsername = username;
+    await connectWebSocket(username, password);
+});
 
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const tabId = button.getAttribute('data-tab');
-            tabs.forEach(tab => {
-                if (tab.id === tabId) {
-                    tab.classList.add('active');
-                } else {
-                    tab.classList.remove('active');
-                }
-            });
+tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        const tabId = button.getAttribute('data-tab');
+        tabs.forEach(tab => {
+            if (tab.id === tabId) {
+                tab.classList.add('active');
+            } else {
+                tab.classList.remove('active');
+            }
         });
     });
+});
 
     async function connectWebSocket(username, password) {
         statusDiv.textContent = 'Connecting to server...';
@@ -92,9 +92,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return `R.U.BULAN©pinoy-2023®#${Math.random().toString(36).substring(7)}`;
     }
 
-    function processReceivedMessage(message) {
+    
     function processReceivedMessage(message) {
     console.log('Received message:', message); // Add this line
+    const jsonDifunction processReceivedMessage(message) {
+    console.log('Received message:', message);
     const jsonDict = JSON.parse(message);
     debugBox.value += `${message}\n`;
 
@@ -110,14 +112,14 @@ document.addEventListener('DOMContentLoaded', () => {
             statusDiv.textContent = `Login failed: ${jsonDict.reason}`;
         }
     } else if (jsonDict.handler === 'roster') {
-        console.log('Roster received. Users:', jsonDict.users); // Add this line
+        console.log('Roster received. Users:', jsonDict.users);
         updateFriendList(jsonDict.users);
     } else if (jsonDict.handler === 'room_event') {
         handleRoomEvent(jsonDict);
     } else if (jsonDict.handler === 'chat_message') {
         handleChatMessage(jsonDict);
     } else if (jsonDict.handler === 'list_room') {
-        console.log('Room list received. Rooms:', jsonDict.rooms); // Add this line
+        console.log('Room list received. Rooms:', jsonDict.rooms);
         updateRoomList(jsonDict.rooms);
     }
 }
